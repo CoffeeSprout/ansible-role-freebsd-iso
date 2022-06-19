@@ -1,0 +1,26 @@
+---
+# tasks file for coffeesprout.freebsd-iso
+# This method works with the base tools in FreeBSD, but I prefer the other method
+
+  - name: Ensure folders exist
+    file:
+      path: "{{ item }}"
+      state: directory
+    with_items:
+    - /mnt/freebsd-iso
+    - /mnt/custom-freebsd-iso
+  - name: mount ISO
+    shell:
+      cmd: mount -t cd9660 /dev/$(mdconfig -f /mnt/FreeBSD-{{ freebsd_iso_version }}-{{ freebsd_iso_branch }}-{{ freebsd_iso_arch }}-disc1.iso) /mnt/freebsd-iso
+      creates: /mnt/freebsd-iso/COPYRIGHT
+      warn: False #You made me do this, Ansible
+  - name: copy all data to work directory
+    synchronize:
+      src: /mnt/freebsd-iso
+      dest: /mnt/custom-freebsd-iso
+  - name: ensure /etc/installerconfig on new ISO
+    template:
+      src: "{{ freebsd_iso_installerconfig }}"
+      dest: /mnt/custom-freebsd-iso/etc/installerconfig
+  - name: create
+    shell: mkisofs -J -R -no-emul-boot -V "$(isoinfo -d -i {{ freebsd_iso_source }} | grep 'Volume id' | awk '{print $3}')" -p "{{ freebsd_iso_vendor }}" -b boot/cdboot -o {{ freebsd_iso_dest }} /mnt/custom-freebsd-iso

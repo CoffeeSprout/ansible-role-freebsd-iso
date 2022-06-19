@@ -1,0 +1,21 @@
+---
+# tasks file for coffeesprout.freebsd-iso
+
+  - name: Ensure folders exist
+    file:
+      path: "{{ item }}"
+      state: directory
+    with_items:
+    - "{{ iso_workdir }}"
+  - name: Ensure ISO is downloaded
+    get_url:
+      url: https://download.freebsd.org/ftp/releases/{{ freebsd_iso_arch }}/{{ freebsd_iso_arch }}/ISO-IMAGES/{{ freebsd_iso_version }}/FreeBSD-{{ freebsd_iso_version }}-{{ freebsd_iso_branch }}-{{ freebsd_iso_arch }}-disc1.iso
+      dest: "{{ freebsd_iso_source }}"
+
+  - name: default method - Use growisofs to add installerconfig
+    include_tasks: create-iso-growisofs.yml
+    when: freebsd_iso_growiso
+
+  - name: alternative method using only base on FreeBSD - mount and copy
+    include_tasks: create-iso-mount-and-copy.yml
+    when: freebsd_iso_mountiso

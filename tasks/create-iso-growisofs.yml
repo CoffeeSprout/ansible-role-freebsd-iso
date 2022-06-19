@@ -1,0 +1,14 @@
+---
+
+  - name: ensure packages
+    package:
+      name: "{{ freebsd_iso_packages }}"
+      state: present
+  - name: ensure /etc/installerconfig on new ISO
+    template:
+      src: "{{ freebsd_iso_installerconfig }}"
+      dest: "{{ iso_workdir }}/installerconfig"
+  - name: cloning iso and adding /etc/installerconfig
+    shell: "cp {{ freebsd_iso_source }} {{ freebsd_iso_dest }}  && growisofs -M {{ freebsd_iso_dest }} -d -l -r -V $(isoinfo -d -i {{ freebsd_iso_source }} | grep 'Volume id' | awk '{print $3}') -graft-points /etc/installerconfig={{ iso_workdir }}/installerconfig"
+    args:
+      creates: "{{ freebsd_iso_dest }}"

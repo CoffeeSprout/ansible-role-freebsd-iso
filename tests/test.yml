@@ -1,0 +1,17 @@
+---
+# Proxmox example
+# So basically this just downloads the pristine image to the local iso storage
+# Then it creates a template image named custom
+# Installation is done by creating a VM with the created iso
+- hosts: neptune
+  roles:
+  - role: coffeesprout.freebsd-iso
+    iso_workdir: "/var/lib/vz/template/iso/"
+    freebsd_iso_installerconfig: "installerconfig.vagrant.j2" #just the simplest one pls
+
+# Testing on different versions of Linux and FreeBSD
+#- hosts: lab
+#  become: True
+#  roles:
+#  - role: coffeesprout.freebsd-iso
+

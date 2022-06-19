@@ -1,0 +1,21 @@
+galaxy_info:
+  author: Barry van Someren
+  description: Creates installable FreeBSD ISOs
+  company: CoffeeSprout ICT Services
+
+  license: BSD
+
+  min_ansible_version: 2.7
+
+
+  platforms:
+  - name: FreeBSD
+    versions:
+     - all
+
+  galaxy_tags:
+  - freebsd
+  - iso
+  - kickstart
+
+dependencies: []

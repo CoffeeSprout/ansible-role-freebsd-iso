@@ -1,0 +1,104 @@
+DISTRIBUTIONS="base.txz kernel.txz"
+
+# for variations in the root disk device name between VMware and Virtualbox
+if [ -e /dev/ada0 ]; then
+  DISKSLICE=ada0
+elif [ -e /dev/da0 ]; then
+  DISKSLICE=da0
+elif [ -e /dev/vtbd0 ]; then
+  DISKSLICE=vtbd0
+else
+  echo "Unknown disk for install.sh to work with!"
+  exit -1
+fi
+
+# Workaround for https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=203777
+export nonInteractive="YES"
+
+export ZFSBOOT_DISKS="$DISKSLICE"
+export ZFSBOOT_CONFIRM_LAYOUT=0
+
+HOSTNAME={{ item.hostname }}
+
+#!/bin/sh -x
+
+ifdev=$(ifconfig | grep '^[a-z]' | cut -d: -f1 | head -n 1)
+# Enable required services
+cat >> /etc/rc.conf << EOT
+ifconfig_vtnet0="inet {{ item.vtnet0.ip }} netmask {{ item.vtnet0.netmask }}"
+default_router="{{ item.vtnet0.gateway }}"
+sshd_enable="YES"
+firstboot_growfs_enable="YES"
+gateway_enable="YES"
+pf_enable="YES"
+pflog_enable="YES"
+pflog_logfile="/var/log/pflog"
+zfs_enable="YES"
+qemu_guest_agent_enable="YES"
+qemu_guest_agent_flags="-d -v -l /var/log/qemu-ga.log"
+EOT
+
+# Tune and boot from zfs
+cat >> /boot/loader.conf << EOT
+autoboot_delay=3
+EOT
+
+# zfs doesn't use an fstab, but some rc scripts expect one
+touch /etc/fstab
+
+# Set up user accounts
+echo "{{ item.rootpw }}" | pw -V /etc usermod root -h 0
+{% for user in item.users %}
+echo "{{ item.rootpw }}" | pw -V /etc useradd {{ user.name }} -h 0 -s /bin/sh {% if user.sudo %}-G wheel {% endif %} -d /home/{{ user.name }} -c "Admin user {{ user.name }}"
+
+/usr/sbin/pwd_mkdb -p /etc/master.passwd
+
+mkdir -p /home/{{ user.name }}/.ssh
+
+{% if user.ssh %}
+cat >> /home/{{ user.name }}/.ssh/authorized_keys << EOT
+"{{ lookup('file', user.name+'.pub') }}"
+EOT
+chmod 700 /home/{{ user.name }}/.ssh
+chmod 600 /home/{{ user.name }}/.ssh/authorized_keys
+{% endif %}
+
+chown -R {{ user.name }}:{{ user.name }} /home/{{ user.name }}
+{% endfor %}
+cat >> /etc/resolv.conf << EOT
+nameserver {{ item.vtnet0.dns }}
+EOT
+
+ifconfig vtnet0 inet {{ item.vtnet0.ip }} netmask {{ item.vtnet0.netmask }}
+route add default {{ item.vtnet0.gateway }}
+
+env ASSUME_ALWAYS_YES=YES pkg bootstrap -f | cat
+env ASSUME_ALWAYS_YES=YES pkg upgrade -f | cat
+
+env ASSUME_ALWAYS_YES=YES pkg install curl bash vim-tiny firstboot-growfs dmidecode sudo
+
+echo "%wheel ALL=(ALL) NOPASSWD: ALL" >>/usr/local/etc/sudoers.d/wheel;
+
+env PAGER=cat freebsd-update fetch install --not-running-from-cron
+
+cat >> /etc/pf.conf << EOF
+ext_if="vtnet1"
+int_if="vtnet0"
+localnet = $int_if:network
+set limit { states 400000 }
+
+#scrub in all
+
+####
+# NAT all internal traffic
+nat on $ext_if from $localnet to any -> ($ext_if)
+
+pass from { lo0, $localnet } to any keep state
+pass proto icmp from any to any
+
+#Life saver
+pass proto ipv6-icmp from any to any
+EOF
+
+touch /firstboot
+poweroff

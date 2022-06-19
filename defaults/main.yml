@@ -1,0 +1,19 @@
+---
+# defaults file for coffeesprout.freebsd-iso
+freebsd_iso_name: "custom"
+freebsd_iso_arch: "amd64"
+freebsd_iso_version: "13.1"
+freebsd_iso_disc: "disc1"
+freebsd_iso_branch: "RELEASE"
+freebsd_iso_vendor: "CoffeeSprout ICT Services"
+freebsd_iso_url: "https://download.freebsd.org/ftp/releases/{{ freebsd_iso_arch }}/{{ freebsd_iso_arch }}/ISO-IMAGES/{{ freebsd_iso_version }}/FreeBSD-{{ freebsd_iso_version }}-{{ freebsd_iso_branch }}-{{ freebsd_iso_arch }}-{{ freebsd_iso_disc }}.iso"
+
+freebsd_iso_source: "{{ iso_workdir }}/{{ freebsd_iso_url | basename }}"
+freebsd_iso_dest: "{{ iso_workdir }}/FreeBSD-{{ freebsd_iso_version }}-{{ freebsd_iso_branch }}-{{ freebsd_iso_arch }}-{{ freebsd_iso_disc }}-{{ freebsd_iso_name }}.iso"
+iso_workdir: "{{ playbook_dir }}/files/isos"
+
+freebsd_iso_installerconfig: "installerconfig.j2"
+
+freebsd_iso_packages: "dvd+rw-tools"
+freebsd_iso_growiso: True
+freebsd_iso_mountiso: False
