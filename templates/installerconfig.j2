@@ -82,16 +82,15 @@ route add default {{ default_gateway }}
 env ASSUME_ALWAYS_YES=YES pkg bootstrap -f | cat
 env ASSUME_ALWAYS_YES=YES pkg upgrade -f | cat
 
-env ASSUME_ALWAYS_YES=YES pkg install curl bash vim firstboot-growfs dmidecode sudo qemu-guest-agent wget
+env ASSUME_ALWAYS_YES=YES pkg install curl bash vim dmidecode sudo qemu-guest-agent wget
 
 echo "%wheel ALL=(ALL) NOPASSWD: ALL" >>/usr/local/etc/sudoers.d/wheel;
 
 env PAGER=cat freebsd-update fetch install --not-running-from-cron
 
-cat >> /etc/pf.conf << EOF
+cat >> /etc/pf.conf << 'EOF'
 ext_if="vtnet0"
-int_if="vtnet2"
-localnet = $int_if:network
+localnet = "{{ localnet | default('{ 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 }') }}"
 set limit { states 400000 }
 
 #scrub in all
