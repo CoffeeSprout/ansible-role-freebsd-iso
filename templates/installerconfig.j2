@@ -43,6 +43,8 @@ EOT
 # Tune and boot from zfs
 cat >> /boot/loader.conf << EOT
 autoboot_delay=3
+hw.vtnet.lro_disable="1"
+hw.vtnet.tso_disable="1"
 EOT
 
 # zfs doesn't use an fstab, but some rc scripts expect one
