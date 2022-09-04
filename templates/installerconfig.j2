@@ -26,7 +26,7 @@ ifdev=$(ifconfig | grep '^[a-z]' | cut -d: -f1 | head -n 1)
 # Enable required services
 cat >> /etc/rc.conf << EOT
 {% for vtnet in vtnets %}
-ifconfig_{{ vtnet.name }}="inet {{ vtnet.ip }} netmask {{ vtnet.netmask }} {{ vtnet.options | default('') }}"
+ifconfig_{{ vtnet.name }}="inet {{ vtnet.ip }} netmask {{ vtnet.netmask }} {{ vtnet.options | default('') }}{% if vtnet.group is defined %}group {{ vtnet.group }}{% endif %}"
 {% endfor %}
 defaultrouter="{{ default_gateway }}"
 sshd_enable="YES"
